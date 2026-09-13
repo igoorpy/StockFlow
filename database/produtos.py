@@ -19,13 +19,25 @@ def cadastrar_produto(nome, categoria, preco, quantidade):
         print(f"Erro ao cadastrar produto: {e}")
         return False
 
-def listar_produtos():
+def listar_produtos(termo_busca=""):
     try:
         conexao = conectar()
         if not conexao:
             return []
         cursor = conexao.cursor()
-        cursor.execute("SELECT id, nome, categoria, preco, quantidade FROM produtos ORDER BY id ASC")
+        
+        if termo_busca:
+            query = """
+                SELECT id, nome, categoria, preco, quantidade 
+                FROM produtos 
+                WHERE nome ILIKE %s OR categoria ILIKE %s 
+                ORDER BY id ASC
+            """
+            parametro = f"%{termo_busca}%"
+            cursor.execute(query, (parametro, parametro))
+        else:
+            cursor.execute("SELECT id, nome, categoria, preco, quantidade FROM produtos ORDER BY id ASC")
+            
         produtos = cursor.fetchall()
         cursor.close()
         conexao.close()
@@ -33,7 +45,7 @@ def listar_produtos():
     except Exception as e:
         print(f"Erro ao listar produtos: {e}")
         return []
-
+    
 def deletar_produto(produto_id):
     """Remove um produto do banco de dados pelo ID."""
     try:
@@ -93,3 +105,4 @@ def obter_metricas_estoque():
     except Exception as e:
         print(f"Erro ao calcular metricas: {e}")
         return {"total_itens": 0, "valor_total": 0.0, "itens_criticos": 0}
+    

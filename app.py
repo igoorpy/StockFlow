@@ -22,13 +22,15 @@ def formatar_moeda(valor):
 
 app.jinja_env.filters['moeda'] = formatar_moeda
 
+# As duas rotas apontam para a MESMA funcao pagina_produtos
 @app.route("/")
 @app.route("/produtos")
 def pagina_produtos():
-    produtos = listar_produtos()
+    termo_busca = request.args.get("busca", "").strip()
+    produtos = listar_produtos(termo_busca)
     metricas = obter_metricas_estoque()
     caixa = obter_caixa_atual()
-    return render_template("produtos.html", produtos=produtos, metricas=metricas, caixa=caixa)
+    return render_template("produtos.html", produtos=produtos, metricas=metricas, caixa=caixa, termo_busca=termo_busca)
 
 @app.route("/produtos/cadastrar", methods=["POST"])
 def rota_cadastrar_produto():
