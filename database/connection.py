@@ -1,8 +1,7 @@
 import psycopg2
-from psycopg2.extras import RealDictCursor
 
 def conectar():
-    """Estabelece conexao com o banco de dados PostgreSQL rodando no Docker."""
+    """Estabelece conexão com o banco de dados PostgreSQL rodando no Docker."""
     try:
         conexao = psycopg2.connect(
             host="localhost",
@@ -17,7 +16,7 @@ def conectar():
         return None
 
 def criar_tabelas():
-    """Cria as tabelas do sistema no PostgreSQL se nao existirem."""
+    """Cria as tabelas do sistema no PostgreSQL se não existirem."""
     conexao = conectar()
     if not conexao:
         return
@@ -46,6 +45,18 @@ def criar_tabelas():
                 total_venda NUMERIC(10, 2) NOT NULL,
                 forma_pagamento VARCHAR(50) DEFAULT 'Dinheiro',
                 data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        # Tabela de Controle de Caixa
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS caixa (
+                id SERIAL PRIMARY KEY,
+                valor_inicial NUMERIC(10, 2) NOT NULL,
+                valor_final NUMERIC(10, 2) DEFAULT 0.0,
+                status VARCHAR(20) NOT NULL DEFAULT 'ABERTO',
+                data_abertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data_fechamento TIMESTAMP
             );
         """)
 

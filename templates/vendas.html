@@ -20,19 +20,37 @@
 
     <main class="main-container">
         
-        <!-- Dashboard de Faturamento -->
-        <section class="summary-card">
-            <div class="summary-info">
+        <!-- Dashboard de Faturamento e Status do Caixa -->
+        <section class="summary-card" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
                 <span class="summary-label">Faturamento Total Acumulado</span>
                 <span class="summary-value">R$ {{ total_faturamento|moeda }}</span>
             </div>
+
+            <!-- Painel de Controle de Caixa -->
+            <div style="background: rgba(255, 255, 255, 0.1); padding: 0.8rem 1.2rem; border-radius: 6px; text-align: right;">
+                {% if caixa %}
+                    <span style="display: block; font-size: 0.75rem; color: #34d399; font-weight: bold;">● CAIXA ABERTO</span>
+                    <span style="font-size: 0.85rem; color: #cbd5e1;">Fundo Inicial: R$ {{ caixa[1]|moeda }}</span>
+                    <form action="/caixa/fechar" method="POST" style="margin-top: 0.4rem;">
+                        <button type="submit" class="btn" style="background-color: #ef4444; color: white; padding: 0.3rem 0.6rem; font-size: 0.75rem;">Fechar Caixa</button>
+                    </form>
+                {% else %}
+                    <span style="display: block; font-size: 0.75rem; color: #f87171; font-weight: bold; margin-bottom: 0.3rem;">● CAIXA FECHADO</span>
+                    <form action="/caixa/abrir" method="POST" style="display: flex; gap: 0.4rem;">
+                        <input type="text" name="valor_inicial" placeholder="Fundo R$" style="width: 90px; padding: 0.25rem; font-size: 0.8rem; border-radius: 4px; border: none;" required>
+                        <button type="submit" class="btn btn-success" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">Abrir Caixa</button>
+                    </form>
+                {% endif %}
+            </div>
         </section>
 
-        <!-- Formulário de Registro de Venda -->
+        <!-- Formulário de Registro de Venda (Apenas se o Caixa estiver Aberto) -->
         <section class="card">
             <div class="card-header">
                 <h3>Registrar Nova Venda</h3>
             </div>
+            {% if caixa %}
             <form action="/vendas/registrar" method="POST" class="form-grid-vendas">
                 <div class="form-group span-3">
                     <label>Selecione o Produto</label>
@@ -63,6 +81,9 @@
                     <button type="submit" class="btn btn-success">Confirmar Venda</button>
                 </div>
             </form>
+            {% else %}
+            <p class="empty-state" style="color: #dc2626; font-weight: bold;">Abra o caixa no painel acima para habilitar o registro de vendas.</p>
+            {% endif %}
         </section>
 
         <!-- Histórico de Vendas -->
