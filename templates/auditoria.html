@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Estoque - Auditoria</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <header class="topbar">
+        <div class="topbar-container" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Sistema de Gestão de Estoque</h2>
+            <nav class="nav-links" style="display: flex; align-items: center; gap: 1rem;">
+                <a href="/produtos">← Produtos</a>
+                <a href="/vendas">Módulo de Vendas</a>
+                <a href="/auditoria" class="active">Auditoria</a>
+                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px;">
+                    👤 {{ session.get('nome') }} ({{ session.get('cargo')|upper }})
+                </span>
+                <a href="/logout" style="color: #f87171; text-decoration: none; font-size: 0.85rem; font-weight: bold;">Sair</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="card">
+            <div class="card-header">
+                <h3>Logs de Auditoria do Sistema</h3>
+            </div>
+            {% if logs %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">ID</th>
+                            <th style="width: 150px;">Usuário</th>
+                            <th style="width: 140px;">Ação</th>
+                            <th>Descrição detalhada</th>
+                            <th style="width: 150px;">Data/Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td><span class="badge-id">#{{ log[0] }}</span></td>
+                            <td class="font-medium">{{ log[1] }}</td>
+                            <td><span class="tag-category">{{ log[2] }}</span></td>
+                            <td>{{ log[3] }}</td>
+                            <td class="text-muted">{{ log[4] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty-state">Nenhum log registrado até o momento.</p>
+            {% endif %}
+        </section>
+    </main>
+
+</body>
+</html>

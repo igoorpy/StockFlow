@@ -16,13 +16,17 @@
                     <a href="/produtos" class="active">Produtos</a>
                 {% endif %}
                 <a href="/vendas">Módulo de Vendas →</a>
-                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 0.5rem;">
+                {% if session.get('cargo') == 'admin' %}
+                    <a href="/auditoria">Auditoria</a>
+                {% endif %}
+                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px;">
                     👤 {{ session.get('nome') }} ({{ session.get('cargo')|upper }})
                 </span>
                 <a href="/logout" style="color: #f87171; text-decoration: none; font-size: 0.85rem; font-weight: bold;">Sair</a>
             </nav>
         </div>
     </header>
+
     <main class="main-container">
 
         <!-- Cards de Métricas da Dashboard -->
@@ -41,8 +45,40 @@
             </div>
         </section>
 
-        <!-- Formulário Compacto -->
-       <section class="card">
+        <!-- Formulário de Cadastro de Produto -->
+        <section class="card">
+            <div class="card-header">
+                <h3>Cadastrar Novo Produto</h3>
+            </div>
+            <form action="/produtos/cadastrar" method="POST" class="form-grid">
+                <div class="form-group span-2">
+                    <label>Nome do Produto</label>
+                    <input type="text" name="nome" placeholder="Ex: Teclado Gamer" required>
+                </div>
+
+                <div class="form-group span-2">
+                    <label>Categoria</label>
+                    <input type="text" name="categoria" placeholder="Ex: Periféricos" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Preço (R$)</label>
+                    <input type="text" name="preco" placeholder="0,00" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" name="quantidade" placeholder="0" min="0" required>
+                </div>
+
+                <div class="form-group btn-group">
+                    <button type="submit" class="btn btn-primary">Cadastrar</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Tabela de Produtos com Pesquisa e Exclusão -->
+        <section class="card">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <h3>Produtos em Estoque</h3>
                 
@@ -56,51 +92,6 @@
                 </form>
             </div>
 
-            {% if produtos %}
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 60px;">ID</th>
-                            <th>Nome do Produto</th>
-                            <th>Categoria</th>
-                            <th style="width: 130px;">Preço</th>
-                            <th style="width: 100px;">Estoque</th>
-                            <th style="width: 80px;">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for prod in produtos %}
-                        <tr>
-                            <td><span class="badge-id">#{{ prod[0] }}</span></td>
-                            <td class="font-medium">{{ prod[1] }}</td>
-                            <td><span class="tag-category">{{ prod[2] }}</span></td>
-                            <td class="font-bold">R$ {{ prod[3]|moeda }}</td>
-                            <td>
-                                {% if prod[4] <= 3 %}
-                                    <span class="badge-stock stock-low">{{ prod[4] }} un.</span>
-                                {% else %}
-                                    <span class="badge-stock stock-ok">{{ prod[4] }} un.</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="/produtos/deletar/{{ prod[0] }}" style="color: #dc2626; text-decoration: none; font-weight: bold; font-size: 0.8rem;" onclick="return confirm('Tem certeza que deseja remover este produto?')">Excluir</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="empty-state">Nenhum produto encontrado para a busca informada.</p>
-            {% endif %}
-        </section>
-
-        <!-- Tabela de Produtos com Botão Excluir -->
-        <section class="card">
-            <div class="card-header">
-                <h3>Produtos em Estoque</h3>
-            </div>
             {% if produtos %}
             <div class="table-responsive">
                 <table class="data-table">

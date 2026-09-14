@@ -73,9 +73,20 @@ def criar_tabelas():
             );
         """)
 
+        # Tabela de Logs de Auditoria
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS logs_auditoria (
+                id SERIAL PRIMARY KEY,
+                usuario_nome VARCHAR(100) NOT NULL,
+                acao VARCHAR(50) NOT NULL,
+                descricao TEXT NOT NULL,
+                data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
         conexao.commit()
 
-        # Criação do usuário Administrador Padrão caso a tabela esteja vazia
+        # Criação dos Usuários Padrão
         cursor.execute("SELECT COUNT(*) FROM usuarios")
         if cursor.fetchone()[0] == 0:
             senha_hash = generate_password_hash("admin123")
@@ -84,7 +95,6 @@ def criar_tabelas():
                 VALUES ('Administrador', 'admin', %s, 'admin')
             """, (senha_hash,))
             
-            # Cria também um vendedor padrão para testes
             senha_vendedor = generate_password_hash("vendedor123")
             cursor.execute("""
                 INSERT INTO usuarios (nome, usuario, senha, cargo) 
@@ -92,7 +102,6 @@ def criar_tabelas():
             """, (senha_vendedor,))
             
             conexao.commit()
-            print("Usuários padrão criados: admin/admin123 e vendedor/vendedor123")
 
         cursor.close()
         conexao.close()

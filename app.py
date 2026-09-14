@@ -12,6 +12,7 @@ from database.produtos import cadastrar_produto, listar_produtos, obter_metricas
 from database.vendas import registrar_venda, buscar_vendas_web
 from database.caixa import obter_caixa_atual, abrir_caixa, fechar_caixa, obter_resumo_fechamento_caixa
 from database.usuarios import autenticar_usuario
+from database.auditoria import registrar_log, listar_logs
 from utils.recibo import gerar_recibo_pdf, gerar_relatorio_fechamento_pdf
 
 app = Flask(__name__)
@@ -58,6 +59,7 @@ def pagina_login():
             session["nome"] = usuario["nome"]
             session["usuario"] = usuario["usuario"]
             session["cargo"] = usuario["cargo"]
+            registrar_log(usuario["nome"], "LOGIN", f"Usuário {usuario['usuario']} realizou login no sistema.")
             return redirect(url_for("pagina_produtos" if usuario["cargo"] == "admin" else "pagina_vendas"))
         else:
             erro = "Usuário ou senha incorretos."
@@ -66,6 +68,8 @@ def pagina_login():
 
 @app.route("/logout")
 def rota_logout():
+    if "nome" in session:
+        registrar_log(session["nome"], "LOGOUT", "Usuário encerrou a sessão.")
     session.clear()
     return redirect(url_for("pagina_login"))
 
@@ -92,7 +96,8 @@ def rota_cadastrar_produto():
     try:
         preco = float(preco_texto)
         quantidade = int(qtd_texto)
-        cadastrar_produto(nome, categoria, preco, quantidade)
+        if cadastrar_produto(nome, categoria, preco, quantidade):
+            registrar_log(session.get("nome"), "CRIAR_PRODUTO", f"Cadastrou o produto '{nome}' (Categoria: {categoria}, Preço: R$ {preco:.2f}, Qtd: {quantidade}).")
     except ValueError:
         pass
 
@@ -103,6 +108,7 @@ def rota_cadastrar_produto():
 @admin_required
 def rota_deletar_produto(id):
     deletar_produto(id)
+    registrar_log(session.get("nome"), "EXCLUIR_PRODUTO", f"Excluiu o produto ID #{id} do banco de dados.")
     return redirect("/produtos")
 
 @app.route("/vendas")
@@ -127,11 +133,19 @@ def rota_registrar_venda():
     try:
         produto_id = int(produto_id_texto)
         quantidade = int(qtd_texto)
-        registrar_venda(produto_id, quantidade, forma_pagamento)
+        if registrar_venda(produto_id, quantidade, forma_pagamento):
+            registrar_log(session.get("nome"), "REGISTRAR_VENDA", f"Registrou venda do produto ID #{produto_id} ({quantidade} un. via {forma_pagamento}).")
     except ValueError:
         pass
 
     return redirect("/vendas")
+
+@app.route("/auditoria")
+@login_required
+@admin_required
+def pagina_auditoria():
+    logs = listar_logs()
+    return render_template("auditoria.html", logs=logs)
 
 @app.route("/vendas/recibo/<int:venda_id>")
 @login_required
@@ -155,7 +169,8 @@ def rota_abrir_caixa():
     valor_inicial_texto = request.form.get("valor_inicial", "0").strip().replace(",", ".")
     try:
         valor_inicial = float(valor_inicial_texto)
-        abrir_caixa(valor_inicial)
+        if abrir_caixa(valor_inicial)[0]:
+            registrar_log(session.get("nome"), "ABRIR_CAIXA", f"Abriu o caixa com fundo inicial de R$ {valor_inicial:.2f}.")
     except ValueError:
         pass
     return redirect("/vendas")
@@ -165,6 +180,7 @@ def rota_abrir_caixa():
 def rota_fechar_caixa():
     sucesso, msg, caixa_id = fechar_caixa()
     if sucesso and caixa_id:
+        registrar_log(session.get("nome"), "FECHAR_CAIXA", f"Encerrou o caixa #{caixa_id}.")
         resumo = obter_resumo_fechamento_caixa(caixa_id)
         if resumo:
             caminho_pdf = f"/tmp/relatorio_fechamento_caixa_{caixa_id}.pdf"
