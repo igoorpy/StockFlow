@@ -1,4 +1,5 @@
 import psycopg2
+from werkzeug.security import generate_password_hash
 
 def conectar():
     """Estabelece conexão com o banco de dados PostgreSQL rodando no Docker."""
@@ -23,6 +24,18 @@ def criar_tabelas():
 
     try:
         cursor = conexao.cursor()
+
+        # Tabela de Usuários
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(100) NOT NULL,
+                usuario VARCHAR(50) UNIQUE NOT NULL,
+                senha VARCHAR(255) NOT NULL,
+                cargo VARCHAR(20) NOT NULL DEFAULT 'vendedor',
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
 
         # Tabela de Produtos
         cursor.execute("""
@@ -61,6 +74,26 @@ def criar_tabelas():
         """)
 
         conexao.commit()
+
+        # Criação do usuário Administrador Padrão caso a tabela esteja vazia
+        cursor.execute("SELECT COUNT(*) FROM usuarios")
+        if cursor.fetchone()[0] == 0:
+            senha_hash = generate_password_hash("admin123")
+            cursor.execute("""
+                INSERT INTO usuarios (nome, usuario, senha, cargo) 
+                VALUES ('Administrador', 'admin', %s, 'admin')
+            """, (senha_hash,))
+            
+            # Cria também um vendedor padrão para testes
+            senha_vendedor = generate_password_hash("vendedor123")
+            cursor.execute("""
+                INSERT INTO usuarios (nome, usuario, senha, cargo) 
+                VALUES ('Vendedor Teste', 'vendedor', %s, 'vendedor')
+            """, (senha_vendedor,))
+            
+            conexao.commit()
+            print("Usuários padrão criados: admin/admin123 e vendedor/vendedor123")
+
         cursor.close()
         conexao.close()
         print("Tabelas verificadas/criadas com sucesso no PostgreSQL!")

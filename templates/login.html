@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Gestão de Estoque</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--bg-color, #f8fafc);">
+
+    <div class="card" style="width: 100%; max-width: 380px; padding: 2rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.4rem; color: #1e293b;">Acesso ao Sistema</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.2rem;">Informe suas credenciais para continuar</p>
+        </div>
+
+        {% if erro %}
+        <div style="background-color: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem; text-align: center;">
+            {{ erro }}
+        </div>
+        {% endif %}
+
+        <form action="/login" method="POST">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.3rem;">Usuário</label>
+                <input type="text" name="usuario" placeholder="Ex: admin" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.3rem;">Senha</label>
+                <input type="password" name="senha" placeholder="••••••••" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.6rem; font-size: 0.9rem;">Entrar no Sistema</button>
+        </form>
+    </div>
+
+</body>
+</html>
