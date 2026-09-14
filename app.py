@@ -10,9 +10,9 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 from database.connection import criar_tabelas
 from database.produtos import cadastrar_produto, listar_produtos, obter_metricas_estoque, deletar_produto
 from database.vendas import registrar_venda, buscar_vendas_web
-from database.caixa import obter_caixa_atual, abrir_caixa, fechar_caixa
+from database.caixa import obter_caixa_atual, abrir_caixa, fechar_caixa, obter_resumo_fechamento_caixa
 from database.usuarios import autenticar_usuario
-from utils.recibo import gerar_recibo_pdf
+from utils.recibo import gerar_recibo_pdf, gerar_relatorio_fechamento_pdf
 
 app = Flask(__name__)
 app.secret_key = "chave_secreta_para_sessao_estoque"
@@ -26,7 +26,6 @@ def formatar_moeda(valor):
 
 app.jinja_env.filters['moeda'] = formatar_moeda
 
-# --- DECORADORES DE CONTROLE DE ACESSO ---
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -43,7 +42,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- ROTAS DE AUTENTICAÇÃO ---
 @app.route("/login", methods=["GET", "POST"])
 def pagina_login():
     if "usuario_id" in session:
@@ -71,7 +69,6 @@ def rota_logout():
     session.clear()
     return redirect(url_for("pagina_login"))
 
-# --- ROTAS DE PRODUTOS ---
 @app.route("/")
 @app.route("/produtos")
 @login_required
@@ -108,7 +105,6 @@ def rota_deletar_produto(id):
     deletar_produto(id)
     return redirect("/produtos")
 
-# --- ROTAS DE VENDAS E CAIXA ---
 @app.route("/vendas")
 @login_required
 def pagina_vendas():
@@ -167,7 +163,13 @@ def rota_abrir_caixa():
 @app.route("/caixa/fechar", methods=["POST"])
 @login_required
 def rota_fechar_caixa():
-    fechar_caixa()
+    sucesso, msg, caixa_id = fechar_caixa()
+    if sucesso and caixa_id:
+        resumo = obter_resumo_fechamento_caixa(caixa_id)
+        if resumo:
+            caminho_pdf = f"/tmp/relatorio_fechamento_caixa_{caixa_id}.pdf"
+            gerar_relatorio_fechamento_pdf(resumo, session.get("nome", "Operador"), caminho_pdf)
+            return send_file(caminho_pdf, as_attachment=True, download_name=f"relatorio_fechamento_caixa_{caixa_id}.pdf")
     return redirect("/vendas")
 
 if __name__ == "__main__":
