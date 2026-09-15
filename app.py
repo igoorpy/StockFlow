@@ -8,7 +8,10 @@ if DIRETORIO_ATUAL not in sys.path:
 
 from flask import Flask, render_template, request, redirect, url_for, session, send_file
 from database.connection import criar_tabelas
-from database.produtos import cadastrar_produto, listar_produtos, obter_metricas_estoque, deletar_produto
+from database.produtos import (
+    cadastrar_produto, listar_produtos, obter_metricas_estoque, 
+    deletar_produto, obter_produto_por_id, atualizar_produto
+)
 from database.vendas import registrar_venda, buscar_vendas_web
 from database.caixa import obter_caixa_atual, abrir_caixa, fechar_caixa, obter_resumo_fechamento_caixa
 from database.usuarios import autenticar_usuario
@@ -102,6 +105,36 @@ def rota_cadastrar_produto():
         pass
 
     return redirect("/produtos")
+
+@app.route("/produtos/editar/<int:id>", methods=["GET", "POST"])
+@login_required
+@admin_required
+def rota_editar_produto(id):
+    produto = obter_produto_por_id(id)
+    if not produto:
+        return redirect("/produtos")
+
+    if request.method == "POST":
+        nome = request.form.get("nome", "").strip()
+        categoria = request.form.get("categoria", "").strip()
+        preco_texto = request.form.get("preco", "").strip().replace(",", ".")
+        qtd_texto = request.form.get("quantidade", "").strip()
+
+        try:
+            preco = float(preco_texto)
+            quantidade = int(qtd_texto)
+            if atualizar_produto(id, nome, categoria, preco, quantidade):
+                registrar_log(
+                    session.get("nome"),
+                    "EDITAR_PRODUTO",
+                    f"Atualizou o produto ID #{id} ({nome}, R$ {preco:.2f}, Qtd: {quantidade})."
+                )
+        except ValueError:
+            pass
+
+        return redirect("/produtos")
+
+    return render_template("editar_produto.html", produto=produto)
 
 @app.route("/produtos/deletar/<int:id>")
 @login_required

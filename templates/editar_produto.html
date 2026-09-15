@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Produto - Gestão de Estoque</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <header class="topbar">
+        <div class="topbar-container" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Sistema de Gestão de Estoque</h2>
+            <nav class="nav-links" style="display: flex; align-items: center; gap: 1rem;">
+                <a href="/produtos">← Voltar para Produtos</a>
+                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px;">
+                    👤 {{ session.get('nome') }} ({{ session.get('cargo')|upper }})
+                </span>
+                <a href="/logout" style="color: #f87171; text-decoration: none; font-size: 0.85rem; font-weight: bold;">Sair</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="card" style="max-width: 600px; margin: 2rem auto;">
+            <div class="card-header">
+                <h3>Editar Produto #{{ produto[0] }}</h3>
+            </div>
+            <form action="/produtos/editar/{{ produto[0] }}" method="POST" class="form-grid">
+                <div class="form-group span-2">
+                    <label>Nome do Produto</label>
+                    <input type="text" name="nome" value="{{ produto[1] }}" required>
+                </div>
+
+                <div class="form-group span-2">
+                    <label>Categoria</label>
+                    <input type="text" name="categoria" value="{{ produto[2] }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Preço (R$)</label>
+                    <input type="text" name="preco" value="{{ '%.2f'|format(produto[3]) }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantidade em Estoque</label>
+                    <input type="number" name="quantidade" value="{{ produto[4] }}" min="0" required>
+                </div>
+
+                <div class="form-group btn-group" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    <a href="/produtos" class="btn" style="background: #e2e8f0; color: #334155; text-decoration: none; text-align: center; padding: 0.5rem 1rem; border-radius: 6px;">Cancelar</a>
+                </div>
+            </form>
+        </section>
+    </main>
+
+</body>
+</html>
