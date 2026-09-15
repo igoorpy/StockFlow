@@ -1,10 +1,23 @@
 import psycopg2
 from database.connection import conectar
+from database.produtos import obter_produto_por_id
 
-def registrar_venda(produto_id, quantidade_vendida, forma_pagamento="Dinheiro"):
-    """Registra uma venda com forma de pagamento e realiza a baixa automatica no estoque."""
-    if quantidade_vendida <= 0:
+def registrar_venda(produto_id, quantidade, forma_pagamento="Dinheiro", cliente_id=None):
+    """Registra uma venda, baixa o estoque do produto e associa o cliente se informado."""
+    if quantidade <= 0:
         return False
+
+    produto = obter_produto_por_id(produto_id)
+    if not produto:
+        return False
+
+    id_prod, nome_prod, cat_prod, preco_unitario, estoque_atual = produto
+
+    if quantidade > estoque_atual:
+        return False
+
+    novo_estoque = estoque_atual - quantidade
+    total_venda = float(preco_unitario) * quantidade
 
     try:
         conexao = conectar()
@@ -12,40 +25,28 @@ def registrar_venda(produto_id, quantidade_vendida, forma_pagamento="Dinheiro"):
             return False
         cursor = conexao.cursor()
 
-        cursor.execute("SELECT nome, preco, quantidade FROM produtos WHERE id = %s", (produto_id,))
-        produto = cursor.fetchone()
-
-        if not produto:
-            conexao.close()
-            return False
-
-        nome_produto, preco_unitario, estoque_atual = produto
-
-        if estoque_atual < quantidade_vendida:
-            conexao.close()
-            return False
-
-        total_venda = float(preco_unitario) * quantidade_vendida
-        novo_estoque = estoque_atual - quantidade_vendida
-
-        # Baixa no estoque e insercao da venda
+        # Atualiza o estoque do produto
         cursor.execute("UPDATE produtos SET quantidade = %s WHERE id = %s", (novo_estoque, produto_id))
+
+        # Trata cliente_id opcional
+        cid = cliente_id if cliente_id and cliente_id > 0 else None
+
+        # Insere a venda
         cursor.execute("""
-            INSERT INTO vendas (produto_id, quantidade, preco_unitario, total_venda, forma_pagamento)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (produto_id, quantidade_vendida, preco_unitario, total_venda, forma_pagamento))
+            INSERT INTO vendas (produto_id, cliente_id, quantidade, preco_unitario, total_venda, forma_pagamento)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (produto_id, cid, quantidade, preco_unitario, total_venda, forma_pagamento))
 
         conexao.commit()
         cursor.close()
         conexao.close()
         return True
-
     except Exception as e:
         print(f"Erro ao registrar venda: {e}")
         return False
 
 def buscar_vendas_web():
-    """Retorna o histórico de vendas incluindo a forma de pagamento e o faturamento total."""
+    """Retorna o histórico de vendas com dados do produto e cliente associado."""
     try:
         conexao = conectar()
         if not conexao:
@@ -53,26 +54,23 @@ def buscar_vendas_web():
         cursor = conexao.cursor()
 
         query = """
-            SELECT 
-                vendas.id,
-                produtos.nome,
-                vendas.quantidade,
-                vendas.preco_unitario,
-                vendas.total_venda,
-                vendas.forma_pagamento,
-                TO_CHAR(vendas.data_venda, 'DD/MM/YYYY HH24:MI')
-            FROM vendas
-            INNER JOIN produtos ON vendas.produto_id = produtos.id
-            ORDER BY vendas.id DESC
+            SELECT v.id, p.nome, v.quantidade, v.preco_unitario, v.total_venda, 
+                   v.forma_pagamento, TO_CHAR(v.data_venda, 'DD/MM/YYYY HH24:MI'),
+                   COALESCE(c.nome, 'Cliente Avulso'), COALESCE(c.cpf_cnpj, 'N/I')
+            FROM vendas v
+            JOIN produtos p ON v.produto_id = p.id
+            LEFT JOIN clientes c ON v.cliente_id = c.id
+            ORDER BY v.id DESC
         """
         cursor.execute(query)
         vendas = cursor.fetchall()
 
-        faturamento_total = sum(float(v[4]) for v in vendas) if vendas else 0.0
+        cursor.execute("SELECT COALESCE(SUM(total_venda), 0.0) FROM vendas")
+        faturamento_total = cursor.fetchone()[0]
 
         cursor.close()
         conexao.close()
-        return vendas, faturamento_total
+        return vendas, float(faturamento_total)
     except Exception as e:
-        print(f"Erro ao buscar vendas para web: {e}")
+        print(f"Erro ao buscar vendas web: {e}")
         return [], 0.0

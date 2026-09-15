@@ -13,6 +13,7 @@ from database.produtos import (
     deletar_produto, obter_produto_por_id, atualizar_produto
 )
 from database.vendas import registrar_venda, buscar_vendas_web
+from database.clientes import cadastrar_cliente, listar_clientes
 from database.caixa import obter_caixa_atual, abrir_caixa, fechar_caixa, obter_resumo_fechamento_caixa
 from database.usuarios import autenticar_usuario
 from database.auditoria import registrar_log, listar_logs
@@ -144,13 +145,36 @@ def rota_deletar_produto(id):
     registrar_log(session.get("nome"), "EXCLUIR_PRODUTO", f"Excluiu o produto ID #{id} do banco de dados.")
     return redirect("/produtos")
 
+# --- ROTAS DE CLIENTES ---
+@app.route("/clientes")
+@login_required
+def pagina_clientes():
+    clientes = listar_clientes()
+    return render_template("clientes.html", clientes=clientes)
+
+@app.route("/clientes/cadastrar", methods=["POST"])
+@login_required
+def rota_cadastrar_cliente():
+    nome = request.form.get("nome", "").strip()
+    cpf_cnpj = request.form.get("cpf_cnpj", "").strip()
+    telefone = request.form.get("telefone", "").strip()
+    email = request.form.get("email", "").strip()
+
+    if nome:
+        if cadastrar_cliente(nome, cpf_cnpj, telefone, email):
+            registrar_log(session.get("nome"), "CRIAR_CLIENTE", f"Cadastrou o cliente '{nome}' (CPF/CNPJ: {cpf_cnpj}).")
+
+    return redirect("/clientes")
+
+# --- ROTAS DE VENDAS E CAIXA ---
 @app.route("/vendas")
 @login_required
 def pagina_vendas():
     produtos = listar_produtos()
+    clientes = listar_clientes()
     vendas, faturamento = buscar_vendas_web()
     caixa = obter_caixa_atual()
-    return render_template("vendas.html", produtos=produtos, vendas=vendas, total_faturamento=faturamento, caixa=caixa)
+    return render_template("vendas.html", produtos=produtos, clientes=clientes, vendas=vendas, total_faturamento=faturamento, caixa=caixa)
 
 @app.route("/vendas/registrar", methods=["POST"])
 @login_required
@@ -160,25 +184,21 @@ def rota_registrar_venda():
         return redirect("/vendas")
 
     produto_id_texto = request.form.get("produto_id", "").strip()
+    cliente_id_texto = request.form.get("cliente_id", "").strip()
     qtd_texto = request.form.get("quantidade", "").strip()
     forma_pagamento = request.form.get("forma_pagamento", "Dinheiro").strip()
 
     try:
         produto_id = int(produto_id_texto)
         quantidade = int(qtd_texto)
-        if registrar_venda(produto_id, quantidade, forma_pagamento):
+        cliente_id = int(cliente_id_texto) if cliente_id_texto else None
+
+        if registrar_venda(produto_id, quantidade, forma_pagamento, cliente_id):
             registrar_log(session.get("nome"), "REGISTRAR_VENDA", f"Registrou venda do produto ID #{produto_id} ({quantidade} un. via {forma_pagamento}).")
     except ValueError:
         pass
 
     return redirect("/vendas")
-
-@app.route("/auditoria")
-@login_required
-@admin_required
-def pagina_auditoria():
-    logs = listar_logs()
-    return render_template("auditoria.html", logs=logs)
 
 @app.route("/vendas/recibo/<int:venda_id>")
 @login_required
@@ -189,12 +209,23 @@ def rota_baixar_recibo(venda_id):
     if not venda_selecionada:
         return redirect("/vendas")
 
-    _, produto_nome, quantidade, preco_unitario, total_venda, forma_pagamento, data_venda = venda_selecionada
+    _, produto_nome, quantidade, preco_unitario, total_venda, forma_pagamento, data_venda, cliente_nome, cliente_cpf = venda_selecionada
 
     caminho_pdf = f"/tmp/recibo_venda_{venda_id}.pdf"
-    gerar_recibo_pdf(venda_id, produto_nome, quantidade, float(preco_unitario), float(total_venda), forma_pagamento, data_venda, caminho_pdf)
+    gerar_recibo_pdf(
+        venda_id, produto_nome, quantidade, float(preco_unitario), 
+        float(total_venda), forma_pagamento, data_venda, 
+        cliente_nome, cliente_cpf, caminho_pdf
+    )
 
     return send_file(caminho_pdf, as_attachment=True, download_name=f"recibo_venda_{venda_id}.pdf")
+
+@app.route("/auditoria")
+@login_required
+@admin_required
+def pagina_auditoria():
+    logs = listar_logs()
+    return render_template("auditoria.html", logs=logs)
 
 @app.route("/caixa/abrir", methods=["POST"])
 @login_required

@@ -3,12 +3,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 
-def gerar_recibo_pdf(venda_id, produto_nome, quantidade, preco_unitario, total_venda, forma_pagamento, data_venda, caminho_saida):
-    """Gera um arquivo PDF com o recibo simplificado da venda."""
+def gerar_recibo_pdf(venda_id, produto_nome, quantidade, preco_unitario, total_venda, forma_pagamento, data_venda, cliente_nome, cliente_cpf, caminho_saida):
+    """Gera o recibo individual em PDF com os dados do cliente."""
     c = canvas.Canvas(caminho_saida, pagesize=letter)
     largura, altura = letter
 
-    # Cabecalho do Recibo
+    # Cabeçalho
     c.setFont("Helvetica-Bold", 16)
     c.drawString(100, altura - 80, "SISTEMA DE GESTÃO DE ESTOQUE")
     
@@ -19,42 +19,48 @@ def gerar_recibo_pdf(venda_id, produto_nome, quantidade, preco_unitario, total_v
     c.setStrokeColor(colors.HexColor("#e2e8f0"))
     c.line(100, altura - 105, 500, altura - 105)
 
-    # Informacoes Gerais da Transacao
+    # Detalhes da Venda
     c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 11)
-    c.drawString(100, altura - 130, f"Recibo Nº: #{venda_id}")
+    c.drawString(100, altura - 125, f"Recibo Nº: #{venda_id}")
 
     c.setFont("Helvetica", 10)
-    c.drawString(100, altura - 150, f"Data/Hora: {data_venda}")
-    c.drawString(100, altura - 165, f"Forma de Pagamento: {forma_pagamento}")
+    c.drawString(100, altura - 142, f"Data/Hora: {data_venda}")
+    c.drawString(100, altura - 157, f"Forma de Pagamento: {forma_pagamento}")
+    
+    # Dados do Cliente
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(100, altura - 177, f"Cliente: {cliente_nome}")
+    c.setFont("Helvetica", 10)
+    c.drawString(100, altura - 192, f"CPF/CNPJ: {cliente_cpf}")
 
     # Tabela de Itens
     c.setStrokeColor(colors.HexColor("#cbd5e1"))
     c.setFillColor(colors.HexColor("#f8fafc"))
-    c.rect(100, altura - 240, 400, 50, fill=True, stroke=True)
+    c.rect(100, altura - 265, 400, 50, fill=True, stroke=True)
 
     c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 10)
-    c.drawString(110, altura - 205, "PRODUTO")
-    c.drawString(280, altura - 205, "QTD")
-    c.drawString(340, altura - 205, "PREÇO UNIT.")
-    c.drawString(430, altura - 205, "TOTAL")
+    c.drawString(110, altura - 230, "PRODUTO")
+    c.drawString(280, altura - 230, "QTD")
+    c.drawString(340, altura - 230, "PREÇO UNIT.")
+    c.drawString(430, altura - 230, "TOTAL")
 
     c.setFont("Helvetica", 10)
-    c.drawString(110, altura - 225, str(produto_nome)[:25])
-    c.drawString(280, altura - 225, f"{quantidade} un.")
-    c.drawString(340, altura - 225, f"R$ {preco_unitario:,.2f}".replace(".", ","))
-    c.drawString(430, altura - 225, f"R$ {total_venda:,.2f}".replace(".", ","))
+    c.drawString(110, altura - 250, str(produto_nome)[:25])
+    c.drawString(280, altura - 250, f"{quantidade} un.")
+    c.drawString(340, altura - 250, f"R$ {preco_unitario:,.2f}".replace(".", ","))
+    c.drawString(430, altura - 250, f"R$ {total_venda:,.2f}".replace(".", ","))
 
     # Totalizador
     c.setFont("Helvetica-Bold", 12)
     c.setFillColor(colors.HexColor("#10b981"))
-    c.drawString(340, altura - 270, f"TOTAL PAGO: R$ {total_venda:,.2f}".replace(".", ","))
+    c.drawString(340, altura - 295, f"TOTAL PAGO: R$ {total_venda:,.2f}".replace(".", ","))
 
-    # Rodape
+    # Rodapé
     c.setFillColor(colors.HexColor("#94a3b8"))
     c.setFont("Helvetica-Oblique", 9)
-    c.drawString(100, altura - 320, "Obrigado pela preferência! Guarde este comprovante para eventuais trocas.")
+    c.drawString(100, altura - 340, "Obrigado pela preferência! Guarde este comprovante para eventuais trocas.")
 
     c.showPage()
     c.save()
@@ -64,7 +70,6 @@ def gerar_relatorio_fechamento_pdf(dados_caixa, usuario_operador, caminho_saida)
     c = canvas.Canvas(caminho_saida, pagesize=letter)
     largura, altura = letter
 
-    # Cabecalho do Relatorio
     c.setFont("Helvetica-Bold", 16)
     c.drawString(80, altura - 60, "RELATÓRIO DE FECHAMENTO DE CAIXA")
     
@@ -75,13 +80,11 @@ def gerar_relatorio_fechamento_pdf(dados_caixa, usuario_operador, caminho_saida)
     c.setStrokeColor(colors.HexColor("#cbd5e1"))
     c.line(80, altura - 85, 520, altura - 85)
 
-    # Informacoes de Turno
     c.setFillColor(colors.black)
     c.setFont("Helvetica", 10)
     c.drawString(80, altura - 110, f"Abertura: {dados_caixa['data_abertura']}")
     c.drawString(300, altura - 110, f"Fechamento: {dados_caixa['data_fechamento']}")
 
-    # Quadro de Saldos
     c.setFillColor(colors.HexColor("#f1f5f9"))
     c.rect(80, altura - 190, 440, 65, fill=True, stroke=True)
 
@@ -99,7 +102,6 @@ def gerar_relatorio_fechamento_pdf(dados_caixa, usuario_operador, caminho_saida)
     c.setFillColor(colors.HexColor("#059669"))
     c.drawString(390, altura - 170, f"R$ {dados_caixa['valor_final']:,.2f}".replace(".", ","))
 
-    # Tabela de Formas de Pagamento
     c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 12)
     c.drawString(80, altura - 220, "Detalhamento por Forma de Pagamento")
@@ -116,12 +118,10 @@ def gerar_relatorio_fechamento_pdf(dados_caixa, usuario_operador, caminho_saida)
     c.setStrokeColor(colors.HexColor("#e2e8f0"))
     c.line(80, y - 10, 520, y - 10)
 
-    # Resumo Final
     c.setFont("Helvetica-Bold", 10)
     c.setFillColor(colors.black)
     c.drawString(80, y - 30, f"Total de Transações Realizadas: {dados_caixa['qtd_vendas']} vendas")
 
-    # Assinaturas
     c.setFont("Helvetica", 9)
     c.setFillColor(colors.HexColor("#94a3b8"))
     c.drawString(80, 100, "________________________________________")

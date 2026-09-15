@@ -48,17 +48,40 @@ def criar_tabelas():
             );
         """)
 
-        # Tabela de Vendas
+        # Tabela de Clientes
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS clientes (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(150) NOT NULL,
+                cpf_cnpj VARCHAR(20),
+                telefone VARCHAR(20),
+                email VARCHAR(100),
+                data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        # Tabela de Vendas (com cliente_id opcional)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vendas (
                 id SERIAL PRIMARY KEY,
                 produto_id INT NOT NULL REFERENCES produtos(id) ON DELETE CASCADE,
+                cliente_id INT REFERENCES clientes(id) ON DELETE SET NULL,
                 quantidade INT NOT NULL,
                 preco_unitario NUMERIC(10, 2) NOT NULL,
                 total_venda NUMERIC(10, 2) NOT NULL,
                 forma_pagamento VARCHAR(50) DEFAULT 'Dinheiro',
                 data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+        """)
+
+        # Garante a coluna cliente_id caso a tabela vendas já existisse anteriormente
+        cursor.execute("""
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='vendas' AND column_name='cliente_id') THEN
+                    ALTER TABLE vendas ADD COLUMN cliente_id INT REFERENCES clientes(id) ON DELETE SET NULL;
+                END IF;
+            END $$;
         """)
 
         # Tabela de Controle de Caixa
@@ -86,7 +109,7 @@ def criar_tabelas():
 
         conexao.commit()
 
-        # Criação dos Usuários Padrão
+        # Usuários padrão
         cursor.execute("SELECT COUNT(*) FROM usuarios")
         if cursor.fetchone()[0] == 0:
             senha_hash = generate_password_hash("admin123")

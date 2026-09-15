@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Estoque - Clientes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <header class="topbar">
+        <div class="topbar-container" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Sistema de Gestão de Estoque</h2>
+            <nav class="nav-links" style="display: flex; align-items: center; gap: 1rem;">
+                {% if session.get('cargo') == 'admin' %}
+                    <a href="/produtos">Produtos</a>
+                {% endif %}
+                <a href="/vendas">Módulo de Vendas</a>
+                <a href="/clientes" class="active">Clientes</a>
+                {% if session.get('cargo') == 'admin' %}
+                    <a href="/auditoria">Auditoria</a>
+                {% endif %}
+                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px;">
+                    👤 {{ session.get('nome') }} ({{ session.get('cargo')|upper }})
+                </span>
+                <a href="/logout" style="color: #f87171; text-decoration: none; font-size: 0.85rem; font-weight: bold;">Sair</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+
+        <!-- Formulário de Cadastro de Cliente -->
+        <section class="card">
+            <div class="card-header">
+                <h3>Cadastrar Novo Cliente</h3>
+            </div>
+            <form action="/clientes/cadastrar" method="POST" class="form-grid">
+                <div class="form-group span-2">
+                    <label>Nome Completo / Razão Social</label>
+                    <input type="text" name="nome" placeholder="Ex: Igor Silva" required>
+                </div>
+
+                <div class="form-group">
+                    <label>CPF / CNPJ</label>
+                    <input type="text" name="cpf_cnpj" placeholder="000.000.000-00">
+                </div>
+
+                <div class="form-group">
+                    <label>Telefone / WhatsApp</label>
+                    <input type="text" name="telefone" placeholder="(00) 00000-0000">
+                </div>
+
+                <div class="form-group span-2">
+                    <label>E-mail</label>
+                    <input type="email" name="email" placeholder="cliente@email.com">
+                </div>
+
+                <div class="form-group btn-group" style="align-self: flex-end;">
+                    <button type="submit" class="btn btn-primary">Cadastrar Cliente</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Tabela de Clientes -->
+        <section class="card">
+            <div class="card-header">
+                <h3>Clientes Cadastrados</h3>
+            </div>
+
+            {% if clientes %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">ID</th>
+                            <th>Nome do Cliente</th>
+                            <th style="width: 140px;">CPF/CNPJ</th>
+                            <th style="width: 140px;">Telefone</th>
+                            <th>E-mail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in clientes %}
+                        <tr>
+                            <td><span class="badge-id">#{{ c[0] }}</span></td>
+                            <td class="font-medium">{{ c[1] }}</td>
+                            <td>{{ c[2] if c[2] else '-' }}</td>
+                            <td>{{ c[3] if c[3] else '-' }}</td>
+                            <td>{{ c[4] if c[4] else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty-state">Nenhum cliente cadastrado no momento.</p>
+            {% endif %}
+        </section>
+    </main>
+
+</body>
+</html>

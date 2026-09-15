@@ -16,7 +16,11 @@
                     <a href="/produtos">← Produtos</a>
                 {% endif %}
                 <a href="/vendas" class="active">Módulo de Vendas</a>
-                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 0.5rem;">
+                <a href="/clientes">Clientes</a>
+                {% if session.get('cargo') == 'admin' %}
+                    <a href="/auditoria">Auditoria</a>
+                {% endif %}
+                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px;">
                     👤 {{ session.get('nome') }} ({{ session.get('cargo')|upper }})
                 </span>
                 <a href="/logout" style="color: #f87171; text-decoration: none; font-size: 0.85rem; font-weight: bold;">Sair</a>
@@ -58,17 +62,27 @@
             </div>
             {% if caixa %}
             <form action="/vendas/registrar" method="POST" class="form-grid-vendas">
-                <div class="form-group span-3">
+                <div class="form-group span-2">
                     <label>Selecione o Produto</label>
                     <select name="produto_id" required>
-                        <option value="">-- Escolha um produto em estoque --</option>
+                        <option value="">-- Escolha um produto --</option>
                         {% for prod in produtos %}
-                        <option value="{{ prod[0] }}">{{ prod[1] }} | R$ {{ prod[3]|moeda }} (Em estoque: {{ prod[4] }})</option>
+                        <option value="{{ prod[0] }}">{{ prod[1] }} | R$ {{ prod[3]|moeda }} (Estoque: {{ prod[4] }})</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div class="form-group span-2">
+                    <label>Cliente (Opcional)</label>
+                    <select name="cliente_id">
+                        <option value="">-- Cliente Avulso / Não identificado --</option>
+                        {% for cli in clientes %}
+                        <option value="{{ cli[0] }}">{{ cli[1] }} {% if cli[2] %}(CPF/CNPJ: {{ cli[2] }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label>Forma de Pagamento</label>
                     <select name="forma_pagamento" required>
                         <option value="PIX">PIX</option>
@@ -83,8 +97,8 @@
                     <input type="number" name="quantidade" min="1" placeholder="Qtd" required>
                 </div>
 
-                <div class="form-group btn-group">
-                    <button type="submit" class="btn btn-success">Confirmar Venda</button>
+                <div class="form-group btn-group" style="grid-column: span 6;">
+                    <button type="submit" class="btn btn-success" style="width: 100%;">Confirmar Venda</button>
                 </div>
             </form>
             {% else %}
@@ -92,7 +106,7 @@
             {% endif %}
         </section>
 
-        <!-- Histórico de Transações (Tabela Única com Recibo PDF) -->
+        <!-- Histórico de Transações -->
         <section class="card">
             <div class="card-header">
                 <h3>Histórico de Transações</h3>
@@ -104,12 +118,13 @@
                         <tr>
                             <th style="width: 80px;">ID Venda</th>
                             <th>Produto</th>
-                            <th style="width: 70px;">Qtd</th>
-                            <th style="width: 120px;">Preço Unit.</th>
-                            <th style="width: 120px;">Total</th>
-                            <th style="width: 130px;">Pagamento</th>
-                            <th style="width: 140px;">Data/Hora</th>
-                            <th style="width: 90px; text-align: center;">Recibo</th>
+                            <th>Cliente</th>
+                            <th style="width: 60px;">Qtd</th>
+                            <th style="width: 110px;">Preço Unit.</th>
+                            <th style="width: 110px;">Total</th>
+                            <th style="width: 120px;">Pagamento</th>
+                            <th style="width: 130px;">Data/Hora</th>
+                            <th style="width: 80px; text-align: center;">Recibo</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -117,6 +132,7 @@
                         <tr>
                             <td><span class="badge-id">#{{ v[0] }}</span></td>
                             <td class="font-medium">{{ v[1] }}</td>
+                            <td><span class="font-medium">{{ v[7] }}</span></td>
                             <td>{{ v[2] }} un.</td>
                             <td>R$ {{ v[3]|moeda }}</td>
                             <td class="font-bold text-success">R$ {{ v[4]|moeda }}</td>
