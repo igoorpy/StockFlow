@@ -12,7 +12,7 @@ from database.produtos import (
     cadastrar_produto, listar_produtos, obter_metricas_estoque, 
     deletar_produto, obter_produto_por_id, atualizar_produto
 )
-from database.vendas import registrar_venda, buscar_vendas_web
+from database.vendas import finalizar_venda_multi_item, buscar_vendas_web, obter_detalhes_venda
 from database.clientes import cadastrar_cliente, listar_clientes
 from database.caixa import obter_caixa_atual, abrir_caixa, fechar_caixa, obter_resumo_fechamento_caixa
 from database.usuarios import autenticar_usuario
@@ -63,6 +63,7 @@ def pagina_login():
             session["nome"] = usuario["nome"]
             session["usuario"] = usuario["usuario"]
             session["cargo"] = usuario["cargo"]
+            session["carrinho"] = []
             registrar_log(usuario["nome"], "LOGIN", f"Usuário {usuario['usuario']} realizou login no sistema.")
             return redirect(url_for("pagina_produtos" if usuario["cargo"] == "admin" else "pagina_vendas"))
         else:
@@ -145,7 +146,6 @@ def rota_deletar_produto(id):
     registrar_log(session.get("nome"), "EXCLUIR_PRODUTO", f"Excluiu o produto ID #{id} do banco de dados.")
     return redirect("/produtos")
 
-# --- ROTAS DE CLIENTES ---
 @app.route("/clientes")
 @login_required
 def pagina_clientes():
@@ -166,7 +166,7 @@ def rota_cadastrar_cliente():
 
     return redirect("/clientes")
 
-# --- ROTAS DE VENDAS E CAIXA ---
+# --- ROTAS DO CARRINHO E PDV ---
 @app.route("/vendas")
 @login_required
 def pagina_vendas():
@@ -174,48 +174,140 @@ def pagina_vendas():
     clientes = listar_clientes()
     vendas, faturamento = buscar_vendas_web()
     caixa = obter_caixa_atual()
-    return render_template("vendas.html", produtos=produtos, clientes=clientes, vendas=vendas, total_faturamento=faturamento, caixa=caixa)
+    
+    if "carrinho" not in session:
+        session["carrinho"] = []
 
-@app.route("/vendas/registrar", methods=["POST"])
+    total_carrinho = sum(item["subtotal"] for item in session["carrinho"])
+
+    return render_template(
+        "vendas.html", 
+        produtos=produtos, 
+        clientes=clientes, 
+        vendas=vendas, 
+        total_faturamento=faturamento, 
+        caixa=caixa,
+        carrinho=session["carrinho"],
+        total_carrinho=total_carrinho
+    )
+
+@app.route("/carrinho/adicionar", methods=["POST"])
 @login_required
-def rota_registrar_venda():
-    caixa = obter_caixa_atual()
-    if not caixa:
-        return redirect("/vendas")
-
+def rota_adicionar_carrinho():
     produto_id_texto = request.form.get("produto_id", "").strip()
-    cliente_id_texto = request.form.get("cliente_id", "").strip()
     qtd_texto = request.form.get("quantidade", "").strip()
-    forma_pagamento = request.form.get("forma_pagamento", "Dinheiro").strip()
 
     try:
         produto_id = int(produto_id_texto)
         quantidade = int(qtd_texto)
-        cliente_id = int(cliente_id_texto) if cliente_id_texto else None
 
-        if registrar_venda(produto_id, quantidade, forma_pagamento, cliente_id):
-            registrar_log(session.get("nome"), "REGISTRAR_VENDA", f"Registrou venda do produto ID #{produto_id} ({quantidade} un. via {forma_pagamento}).")
+        if quantidade <= 0:
+            return redirect("/vendas")
+
+        produto = obter_produto_por_id(produto_id)
+        if produto and produto[4] >= quantidade:
+            carrinho = session.get("carrinho", [])
+
+            # Se o item ja existe no carrinho, incrementa a quantidade
+            item_existente = next((item for item in carrinho if item["produto_id"] == produto_id), None)
+            if item_existente:
+                nova_qtd = item_existente["quantidade"] + quantidade
+                if nova_qtd <= produto[4]:
+                    item_existente["quantidade"] = nova_qtd
+                    item_existente["subtotal"] = float(produto[3]) * nova_qtd
+            else:
+                subtotal = float(produto[3]) * quantidade
+                carrinho.append({
+                    "produto_id": produto_id,
+                    "nome": produto[1],
+                    "preco_unitario": float(produto[3]),
+                    "quantidade": quantidade,
+                    "subtotal": subtotal
+                })
+
+            session["carrinho"] = carrinho
+            session.modified = True
     except ValueError:
         pass
 
     return redirect("/vendas")
 
+@app.route("/carrinho/remover/<int:index>")
+@login_required
+def rota_remover_carrinho(index):
+    carrinho = session.get("carrinho", [])
+    if 0 <= index < len(carrinho):
+        carrinho.pop(index)
+        session["carrinho"] = carrinho
+        session.modified = True
+    return redirect("/vendas")
+
+@app.route("/carrinho/limpar")
+@login_required
+def rota_limpar_carrinho():
+    session["carrinho"] = []
+    session.modified = True
+    return redirect("/vendas")
+
+@app.route("/vendas/finalizar", methods=["POST"])
+@login_required
+def rota_finalizar_venda():
+    caixa = obter_caixa_atual()
+    if not caixa:
+        return redirect("/vendas")
+
+    carrinho = session.get("carrinho", [])
+    if not carrinho:
+        return redirect("/vendas")
+
+    cliente_id_texto = request.form.get("cliente_id", "").strip()
+    forma_pagamento = request.form.get("forma_pagamento", "Dinheiro").strip()
+    cliente_id = int(cliente_id_texto) if cliente_id_texto.isdigit() else None
+
+    sucesso, resultado = finalizar_venda_multi_item(carrinho, forma_pagamento, cliente_id)
+    
+    if sucesso:
+        venda_id = resultado
+        registrar_log(
+            session.get("nome"), 
+            "REGISTRAR_VENDA", 
+            f"Finalizou a Venda Multi-Item #{venda_id} ({len(carrinho)} itens via {forma_pagamento})."
+        )
+        session["carrinho"] = []
+        session.modified = True
+        return redirect("/vendas")
+    else:
+        # Se houver erro, recarrega a pagina mostrando a mensagem exata do erro
+        produtos = listar_produtos()
+        clientes = listar_clientes()
+        vendas, faturamento = buscar_vendas_web()
+        total_carrinho = sum(item["subtotal"] for item in carrinho)
+        
+        return render_template(
+            "vendas.html",
+            produtos=produtos,
+            clientes=clientes,
+            vendas=vendas,
+            total_faturamento=faturamento,
+            caixa=caixa,
+            carrinho=carrinho,
+            total_carrinho=total_carrinho,
+            erro_venda=resultado
+        )
+
 @app.route("/vendas/recibo/<int:venda_id>")
 @login_required
 def rota_baixar_recibo(venda_id):
-    vendas, _ = buscar_vendas_web()
-    venda_selecionada = next((v for v in vendas if v[0] == venda_id), None)
-
-    if not venda_selecionada:
+    venda, itens = obter_detalhes_venda(venda_id)
+    if not venda:
         return redirect("/vendas")
 
-    _, produto_nome, quantidade, preco_unitario, total_venda, forma_pagamento, data_venda, cliente_nome, cliente_cpf = venda_selecionada
-
+    v_id, c_nome, c_cpf, total_venda, forma_pagamento, data_venda = venda
     caminho_pdf = f"/tmp/recibo_venda_{venda_id}.pdf"
+
     gerar_recibo_pdf(
-        venda_id, produto_nome, quantidade, float(preco_unitario), 
-        float(total_venda), forma_pagamento, data_venda, 
-        cliente_nome, cliente_cpf, caminho_pdf
+        v_id, c_nome, c_cpf, float(total_venda), 
+        forma_pagamento, data_venda, itens, caminho_pdf
     )
 
     return send_file(caminho_pdf, as_attachment=True, download_name=f"recibo_venda_{venda_id}.pdf")

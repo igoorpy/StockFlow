@@ -17,7 +17,7 @@ def conectar():
         return None
 
 def criar_tabelas():
-    """Cria as tabelas do sistema no PostgreSQL se não existirem."""
+    """Cria e atualiza as tabelas do sistema no PostgreSQL."""
     conexao = conectar()
     if not conexao:
         return
@@ -60,28 +60,55 @@ def criar_tabelas():
             );
         """)
 
-        # Tabela de Vendas (com cliente_id opcional)
+        # Tabela de Vendas
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vendas (
                 id SERIAL PRIMARY KEY,
-                produto_id INT NOT NULL REFERENCES produtos(id) ON DELETE CASCADE,
                 cliente_id INT REFERENCES clientes(id) ON DELETE SET NULL,
-                quantidade INT NOT NULL,
-                preco_unitario NUMERIC(10, 2) NOT NULL,
                 total_venda NUMERIC(10, 2) NOT NULL,
                 forma_pagamento VARCHAR(50) DEFAULT 'Dinheiro',
                 data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
 
-        # Garante a coluna cliente_id caso a tabela vendas já existisse anteriormente
+        # MIGRAÇÃO E CORREÇÃO DE COLUNAS DA TABELA VENDAS:
+        # Permite que produto_id, quantidade e preco_unitario sejam nulos na tabela vendas
+        # pois agora eles pertencem a tabela itens_venda
         cursor.execute("""
             DO $$ 
             BEGIN 
+                -- Remove restricao NOT NULL de produto_id se ela existir
+                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='vendas' AND column_name='produto_id') THEN
+                    ALTER TABLE vendas ALTER COLUMN produto_id DROP NOT NULL;
+                END IF;
+
+                -- Remove restricao NOT NULL de quantidade se ela existir
+                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='vendas' AND column_name='quantidade') THEN
+                    ALTER TABLE vendas ALTER COLUMN quantidade DROP NOT NULL;
+                END IF;
+
+                -- Remove restricao NOT NULL de preco_unitario se ela existir
+                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='vendas' AND column_name='preco_unitario') THEN
+                    ALTER TABLE vendas ALTER COLUMN preco_unitario DROP NOT NULL;
+                END IF;
+
+                -- Garante que cliente_id exista na tabela vendas
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='vendas' AND column_name='cliente_id') THEN
                     ALTER TABLE vendas ADD COLUMN cliente_id INT REFERENCES clientes(id) ON DELETE SET NULL;
                 END IF;
             END $$;
+        """)
+
+        # Tabela de Itens da Venda (Carrinho Multi-Item)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS itens_venda (
+                id SERIAL PRIMARY KEY,
+                venda_id INT NOT NULL REFERENCES vendas(id) ON DELETE CASCADE,
+                produto_id INT REFERENCES produtos(id) ON DELETE SET NULL,
+                quantidade INT NOT NULL,
+                preco_unitario NUMERIC(10, 2) NOT NULL,
+                subtotal NUMERIC(10, 2) NOT NULL
+            );
         """)
 
         # Tabela de Controle de Caixa
@@ -109,7 +136,7 @@ def criar_tabelas():
 
         conexao.commit()
 
-        # Usuários padrão
+        # Usuários Padrão
         cursor.execute("SELECT COUNT(*) FROM usuarios")
         if cursor.fetchone()[0] == 0:
             senha_hash = generate_password_hash("admin123")
@@ -128,6 +155,6 @@ def criar_tabelas():
 
         cursor.close()
         conexao.close()
-        print("Tabelas verificadas/criadas com sucesso no PostgreSQL!")
+        print("Migração de tabela executada com sucesso no PostgreSQL!")
     except Exception as e:
-        print(f"Erro ao criar tabelas no PostgreSQL: {e}")
+        print(f"Erro ao criar/atualizar tabelas no PostgreSQL: {e}")

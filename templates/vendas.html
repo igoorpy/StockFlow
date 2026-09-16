@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Estoque - Vendas</title>
+    <title>Gestão de Estoque - Vendas PDV</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -30,14 +30,13 @@
 
     <main class="main-container">
         
-        <!-- Dashboard de Faturamento e Status do Caixa -->
+        <!-- Faturamento e Caixa -->
         <section class="summary-card" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <span class="summary-label">Faturamento Total Acumulado</span>
                 <span class="summary-value">R$ {{ total_faturamento|moeda }}</span>
             </div>
 
-            <!-- Painel de Controle de Caixa -->
             <div style="background: rgba(255, 255, 255, 0.1); padding: 0.8rem 1.2rem; border-radius: 6px; text-align: right;">
                 {% if caixa %}
                     <span style="display: block; font-size: 0.75rem; color: #34d399; font-weight: bold;">● CAIXA ABERTO</span>
@@ -55,58 +54,128 @@
             </div>
         </section>
 
-        <!-- Formulário de Registro de Venda (Apenas se o Caixa estiver Aberto) -->
+        {% if caixa %}
+        <!-- Grid do PDV: Adicionar Item ao Carrinho e Resumo -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            
+            <!-- Formulario de Adicao de Item -->
+            <section class="card" style="margin-bottom: 0;">
+                <div class="card-header">
+                    <h3>1. Adicionar Produto ao Carrinho</h3>
+                </div>
+                <form action="/carrinho/adicionar" method="POST">
+                    <div class="form-group" style="margin-bottom: 0.8rem;">
+                        <label>Selecione o Produto</label>
+                        <select name="produto_id" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+                            <option value="">-- Escolha um produto --</option>
+                            {% for prod in produtos %}
+                            <option value="{{ prod[0] }}">{{ prod[1] }} | R$ {{ prod[3]|moeda }} (Estoque: {{ prod[4] }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label>Quantidade</label>
+                        <input type="number" name="quantidade" value="1" min="1" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">+ Adicionar ao Carrinho</button>
+                </form>
+            </section>
+
+            <!-- Resumo do Carrinho e Finalizacao -->
+            <section class="card" style="margin-bottom: 0;">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>2. Carrinho Atual</h3>
+                    {% if carrinho %}
+                        <a href="/carrinho/limpar" style="color: #ef4444; font-size: 0.8rem; text-decoration: none; font-weight: bold;">Limpar Carrinho</a>
+                    {% endif %}
+                </div>
+
+                {% if carrinho %}
+                <div class="table-responsive" style="max-height: 180px; overflow-y: auto; margin-bottom: 1rem;">
+                    <table class="data-table" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Qtd</th>
+                                <th>Preço</th>
+                                <th>Subtotal</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in carrinho %}
+                            <tr>
+                                <td>{{ item['nome'] }}</td>
+                                <td>{{ item['quantidade'] }}</td>
+                                <td>R$ {{ item['preco_unitario']|moeda }}</td>
+                                <td class="font-bold">R$ {{ item['subtotal']|moeda }}</td>
+                                <td>
+                                    <a href="/carrinho/remover/{{ loop.index0 }}" style="color: #ef4444; font-weight: bold; text-decoration: none;">✕</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Resumo do Carrinho e Finalizacao -->
+            <section class="card" style="margin-bottom: 0;">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>2. Carrinho Atual</h3>
+                    {% if carrinho %}
+                        <a href="/carrinho/limpar" style="color: #ef4444; font-size: 0.8rem; text-decoration: none; font-weight: bold;">Limpar Carrinho</a>
+                    {% endif %}
+                </div>
+                {% if erro_venda %}
+                <div style="background-color: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem; text-align: center;">
+                    <strong>Falha ao finalizar venda:</strong> {{ erro_venda }}
+                </div>
+                {% endif %}
+
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                        <span style="font-weight: bold; font-size: 1.1rem;">Total da Venda:</span>
+                        <span style="font-weight: bold; font-size: 1.2rem; color: #059669;">R$ {{ total_carrinho|moeda }}</span>
+                    </div>
+
+                    <form action="/vendas/finalizar" method="POST" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div>
+                            <label style="font-size: 0.75rem; font-weight: bold;">Cliente (Opcional)</label>
+                            <select name="cliente_id" style="width: 100%; padding: 0.4rem; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                                <option value="">-- Avulso --</option>
+                                {% for cli in clientes %}
+                                <option value="{{ cli[0] }}">{{ cli[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="font-size: 0.75rem; font-weight: bold;">Pagamento</label>
+                            <select name="forma_pagamento" style="width: 100%; padding: 0.4rem; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+                                <option value="Dinheiro">Dinheiro</option>
+                                <option value="PIX">PIX</option>
+                                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                <option value="Cartão de Débito">Cartão de Débito</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-success" style="grid-column: span 2; margin-top: 0.5rem; padding: 0.6rem;">Finalizar Venda (Emitir Nota/PDF)</button>
+                    </form>
+                </div>
+                {% else %}
+                <p class="empty-state" style="padding: 2rem 0;">Seu carrinho está vazio. Adicione produtos ao lado.</p>
+                {% endif %}
+            </section>
+
+        </div>
+        {% else %}
         <section class="card">
-            <div class="card-header">
-                <h3>Registrar Nova Venda</h3>
-            </div>
-            {% if caixa %}
-            <form action="/vendas/registrar" method="POST" class="form-grid-vendas">
-                <div class="form-group span-2">
-                    <label>Selecione o Produto</label>
-                    <select name="produto_id" required>
-                        <option value="">-- Escolha um produto --</option>
-                        {% for prod in produtos %}
-                        <option value="{{ prod[0] }}">{{ prod[1] }} | R$ {{ prod[3]|moeda }} (Estoque: {{ prod[4] }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group span-2">
-                    <label>Cliente (Opcional)</label>
-                    <select name="cliente_id">
-                        <option value="">-- Cliente Avulso / Não identificado --</option>
-                        {% for cli in clientes %}
-                        <option value="{{ cli[0] }}">{{ cli[1] }} {% if cli[2] %}(CPF/CNPJ: {{ cli[2] }}){% endif %}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Forma de Pagamento</label>
-                    <select name="forma_pagamento" required>
-                        <option value="PIX">PIX</option>
-                        <option value="Cartão de Crédito">Cartão de Crédito</option>
-                        <option value="Cartão de Débito">Cartão de Débito</option>
-                        <option value="Dinheiro" selected>Dinheiro</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Quantidade</label>
-                    <input type="number" name="quantidade" min="1" placeholder="Qtd" required>
-                </div>
-
-                <div class="form-group btn-group" style="grid-column: span 6;">
-                    <button type="submit" class="btn btn-success" style="width: 100%;">Confirmar Venda</button>
-                </div>
-            </form>
-            {% else %}
-            <p class="empty-state" style="color: #dc2626; font-weight: bold;">Abra o caixa no painel acima para habilitar o registro de vendas.</p>
-            {% endif %}
+            <p class="empty-state" style="color: #dc2626; font-weight: bold;">Abra o caixa no painel superior para habilitar a inclusão de itens no carrinho e efetivação de vendas.</p>
         </section>
+        {% endif %}
 
-        <!-- Histórico de Transações -->
+        <!-- Historico de Vendas -->
         <section class="card">
             <div class="card-header">
                 <h3>Histórico de Transações</h3>
@@ -117,13 +186,11 @@
                     <thead>
                         <tr>
                             <th style="width: 80px;">ID Venda</th>
-                            <th>Produto</th>
                             <th>Cliente</th>
-                            <th style="width: 60px;">Qtd</th>
-                            <th style="width: 110px;">Preço Unit.</th>
-                            <th style="width: 110px;">Total</th>
+                            <th style="width: 100px;">Qtd Itens</th>
+                            <th style="width: 120px;">Total Venda</th>
                             <th style="width: 120px;">Pagamento</th>
-                            <th style="width: 130px;">Data/Hora</th>
+                            <th style="width: 140px;">Data/Hora</th>
                             <th style="width: 80px; text-align: center;">Recibo</th>
                         </tr>
                     </thead>
@@ -131,13 +198,11 @@
                         {% for v in vendas %}
                         <tr>
                             <td><span class="badge-id">#{{ v[0] }}</span></td>
-                            <td class="font-medium">{{ v[1] }}</td>
-                            <td><span class="font-medium">{{ v[7] }}</span></td>
-                            <td>{{ v[2] }} un.</td>
-                            <td>R$ {{ v[3]|moeda }}</td>
-                            <td class="font-bold text-success">R$ {{ v[4]|moeda }}</td>
-                            <td><span class="tag-category">{{ v[5] }}</span></td>
-                            <td class="text-muted">{{ v[6] }}</td>
+                            <td><span class="font-medium">{{ v[1] }}</span></td>
+                            <td>{{ v[5] }} tipo(s)</td>
+                            <td class="font-bold text-success">R$ {{ v[2]|moeda }}</td>
+                            <td><span class="tag-category">{{ v[3] }}</span></td>
+                            <td class="text-muted">{{ v[4] }}</td>
                             <td style="text-align: center;">
                                 <a href="/vendas/recibo/{{ v[0] }}" target="_blank" class="btn btn-primary" style="display: inline-block; text-decoration: none; padding: 0.2rem 0.4rem; font-size: 0.75rem; border-radius: 4px; width: auto;">📄 PDF</a>
                             </td>
