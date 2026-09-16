@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Estoque - Gestão de Usuários</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <header class="topbar">
+        <div class="topbar-container" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Sistema de Gestão de Estoque</h2>
+            <nav class="nav-links" style="display: flex; align-items: center; gap: 1rem;">
+                {% if session.get('cargo') == 'admin' %}
+                    <a href="/produtos">Produtos</a>
+                {% endif %}
+                <a href="/vendas">Módulo de Vendas</a>
+                <a href="/clientes">Clientes</a>
+                {% if session.get('cargo') == 'admin' %}
+                    <a href="/usuarios" class="active">Usuários</a>
+                    <a href="/auditoria">Auditoria</a>
+                {% endif %}
+                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px;">
+                    👤 {{ session.get('nome') }} ({{ session.get('cargo')|upper }})
+                </span>
+                <a href="/logout" style="color: #f87171; text-decoration: none; font-size: 0.85rem; font-weight: bold;">Sair</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+
+        <!-- Mensagens de Alerta/Notificacao -->
+        {% if msg_sucesso %}
+        <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem;">
+            ✅ {{ msg_sucesso }}
+        </div>
+        {% endif %}
+
+        {% if msg_erro %}
+        <div style="background-color: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem;">
+            ❌ {{ msg_erro }}
+        </div>
+        {% endif %}
+
+        <!-- Cadastrar Novo Usuário -->
+        <section class="card">
+            <div class="card-header">
+                <h3>Cadastrar Novo Usuário / Operador</h3>
+            </div>
+            <form action="/usuarios/cadastrar" method="POST" class="form-grid">
+                <div class="form-group span-2">
+                    <label>Nome Completo</label>
+                    <input type="text" name="nome" placeholder="Ex: Carlos Oliveira" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Nome de Usuário (Login)</label>
+                    <input type="text" name="usuario" placeholder="Ex: carlos.oliveira" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Senha Inicial</label>
+                    <input type="password" name="senha" placeholder="******" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Cargo / Perfil</label>
+                    <select name="cargo" required>
+                        <option value="vendedor" selected>Vendedor (PDV)</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+
+                <div class="form-group btn-group" style="align-self: flex-end;">
+                    <button type="submit" class="btn btn-primary">Cadastrar Usuário</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Tabela de Usuários e Alteração de Senha -->
+        <section class="card">
+            <div class="card-header">
+                <h3>Equipe Cadastrada</h3>
+            </div>
+
+            {% if usuarios %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">ID</th>
+                            <th>Nome</th>
+                            <th>Login</th>
+                            <th>Cargo</th>
+                            <th>Data de Cadastro</th>
+                            <th style="width: 250px;">Redefinir Senha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in usuarios %}
+                        <tr>
+                            <td><span class="badge-id">#{{ u[0] }}</span></td>
+                            <td class="font-medium">{{ u[1] }}</td>
+                            <td><code>{{ u[2] }}</code></td>
+                            <td>
+                                {% if u[3] == 'admin' %}
+                                    <span style="background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: bold; font-size: 0.75rem;">ADMIN</span>
+                                {% else %}
+                                    <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">VENDEDOR</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted">{{ u[4] }}</td>
+                            <td>
+                                <form action="/usuarios/redefinir-senha/{{ u[0] }}" method="POST" style="display: flex; gap: 0.3rem;">
+                                    <input type="password" name="nova_senha" placeholder="Nova senha" style="padding: 0.25rem 0.4rem; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 4px; width: 120px;" required>
+                                    <button type="submit" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; width: auto;">Alterar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty-state">Nenhum usuário cadastrado.</p>
+            {% endif %}
+        </section>
+    </main>
+
+</body>
+</html>

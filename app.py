@@ -15,9 +15,10 @@ from database.produtos import (
 from database.vendas import finalizar_venda_multi_item, buscar_vendas_web, obter_detalhes_venda
 from database.clientes import cadastrar_cliente, listar_clientes
 from database.caixa import obter_caixa_atual, abrir_caixa, fechar_caixa, obter_resumo_fechamento_caixa
-from database.usuarios import autenticar_usuario
+from database.usuarios import autenticar_usuario, listar_usuarios, cadastrar_usuario, redefinir_senha_usuario
 from database.auditoria import registrar_log, listar_logs
 from utils.recibo import gerar_recibo_pdf, gerar_relatorio_fechamento_pdf
+
 
 app = Flask(__name__)
 app.secret_key = "chave_secreta_para_sessao_estoque"
@@ -311,6 +312,54 @@ def rota_baixar_recibo(venda_id):
     )
 
     return send_file(caminho_pdf, as_attachment=True, download_name=f"recibo_venda_{venda_id}.pdf")
+# --- ROTAS DE GESTÃO DE USUÁRIOS ---
+@app.route("/usuarios")
+@login_required
+@admin_required
+def pagina_usuarios():
+    lista = listar_usuarios()
+    return render_template("usuarios.html", usuarios=lista)
+
+@app.route("/usuarios/cadastrar", methods=["POST"])
+@login_required
+@admin_required
+def rota_cadastrar_usuario():
+    nome = request.form.get("nome", "").strip()
+    usuario_input = request.form.get("usuario", "").strip()
+    senha = request.form.get("senha", "").strip()
+    cargo = request.form.get("cargo", "vendedor").strip()
+
+    sucesso, msg = cadastrar_usuario(nome, usuario_input, senha, cargo)
+    if sucesso:
+        registrar_log(session.get("nome"), "CRIAR_USUARIO", f"Cadastrou o usuário '{usuario_input}' (Cargo: {cargo.upper()}).")
+        msg_sucesso = "Usuário cadastrado com sucesso!"
+        msg_erro = None
+    else:
+        msg_sucesso = None
+        msg_erro = msg
+
+    lista = listar_usuarios()
+    return render_template("usuarios.html", usuarios=lista, msg_sucesso=msg_sucesso, msg_erro=msg_erro)
+
+@app.route("/usuarios/redefinir-senha/<int:id>", methods=["POST"])
+@login_required
+@admin_required
+def rota_redefinir_senha(id):
+    nova_senha = request.form.get("nova_senha", "").strip()
+    if nova_senha:
+        if redefinir_senha_usuario(id, nova_senha):
+            registrar_log(session.get("nome"), "REDEFINIR_SENHA", f"Redefiniu a senha do usuário ID #{id}.")
+            msg_sucesso = f"Senha do usuário #{id} redefinida com sucesso!"
+            msg_erro = None
+        else:
+            msg_sucesso = None
+            msg_erro = "Erro ao redefinir a senha no banco de dados."
+    else:
+        msg_sucesso = None
+        msg_erro = "A nova senha não pode estar em branco."
+
+    lista = listar_usuarios()
+    return render_template("usuarios.html", usuarios=lista, msg_sucesso=msg_sucesso, msg_erro=msg_erro)
 
 @app.route("/auditoria")
 @login_required
