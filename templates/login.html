@@ -3,36 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Gestão de Estoque</title>
+    <title>StockFlow - Login</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}?v=1" type="image/png">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--bg-color, #f8fafc);">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
 
-    <div class="card" style="width: 100%; max-width: 380px; padding: 2rem;">
-        <div style="text-align: center; margin-bottom: 1.5rem;">
-            <h2 style="font-size: 1.4rem; color: #1e293b;">Acesso ao Sistema</h2>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.2rem;">Informe suas credenciais para continuar</p>
+        .login-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 400px;
+            padding: 2.5rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .login-header {
+            margin-bottom: 2rem;
+        }
+
+        .login-brand {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #2563eb;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .login-subtitle {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .form-login {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            text-align: left;
+        }
+
+        .form-login .form-group label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #475569;
+            letter-spacing: 0.05em;
+        }
+
+        .form-login .form-group input {
+            padding: 0.75rem 0.85rem;
+            font-size: 0.95rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .form-login .form-group input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin-top: 0.5rem;
+        }
+
+        .btn-login:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-login:active {
+            transform: scale(0.98);
+        }
+
+        .alert-error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 1.25rem;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .login-footer {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f1f5f9;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-brand">
+                📦 StockFlow
+            </div>
+            <p class="login-subtitle">Bem-vindo! Faça login para acessar o sistema.</p>
         </div>
 
         {% if erro %}
-        <div style="background-color: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem; text-align: center;">
-            {{ erro }}
+        <div class="alert-error">
+            ⚠️ {{ erro }}
         </div>
         {% endif %}
 
-        <form action="/login" method="POST">
-            <div class="form-group" style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.3rem;">Usuário</label>
-                <input type="text" name="usuario" placeholder="Ex: admin" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+        <form action="/login" method="POST" class="form-login">
+            <div class="form-group">
+                <label for="usuario">Usuário / Login</label>
+                <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário..." required autofocus>
             </div>
 
-            <div class="form-group" style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.3rem;">Senha</label>
-                <input type="password" name="senha" placeholder="••••••••" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+            <div class="form-group">
+                <label for="senha">Senha</label>
+                <input type="password" id="senha" name="senha" placeholder="••••••••" required>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.6rem; font-size: 0.9rem;">Entrar no Sistema</button>
+            <button type="submit" class="btn-login">Entrar no Sistema</button>
         </form>
+
+        <div class="login-footer">
+            StockFlow &copy; Gestão de Estoque & PDV
+        </div>
     </div>
 
 </body>

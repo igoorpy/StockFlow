@@ -8,6 +8,7 @@ if DIRETORIO_ATUAL not in sys.path:
 
 from flask import Flask, render_template, request, redirect, url_for, session, send_file
 from database.connection import criar_tabelas
+from database.seed import popular_banco_demonstracao
 from database.produtos import (
     cadastrar_produto, listar_produtos, obter_metricas_estoque, 
     deletar_produto, obter_produto_por_id, atualizar_produto
@@ -24,6 +25,7 @@ app = Flask(__name__)
 app.secret_key = "chave_secreta_para_sessao_estoque"
 
 criar_tabelas()
+popular_banco_demonstracao()
 
 def formatar_moeda(valor):
     if valor is None:
