@@ -16,7 +16,7 @@ from database.produtos import (
 from database.vendas import finalizar_venda_multi_item, buscar_vendas_web, obter_detalhes_venda
 from database.clientes import cadastrar_cliente, listar_clientes
 from database.caixa import obter_caixa_atual, abrir_caixa, fechar_caixa, obter_resumo_fechamento_caixa
-from database.usuarios import autenticar_usuario, listar_usuarios, cadastrar_usuario, redefinir_senha_usuario
+from database.usuarios import autenticar_usuario, listar_usuarios, cadastrar_usuario, redefinir_senha_usuario, deletar_usuario
 from database.auditoria import registrar_log, listar_logs
 from utils.recibo import gerar_recibo_pdf, gerar_relatorio_fechamento_pdf
 
@@ -362,6 +362,20 @@ def rota_redefinir_senha(id):
 
     lista = listar_usuarios()
     return render_template("usuarios.html", usuarios=lista, msg_sucesso=msg_sucesso, msg_erro=msg_erro)
+
+@app.route('/usuarios/deletar/<int:usuario_id>', methods=['POST'])
+@login_required
+@admin_required
+def rota_deletar_usuario(usuario_id):
+    # Evita que o usuário logado exclua a si mesmo acidentalmente
+    if session.get('usuario_id') == usuario_id:
+        return redirect(url_for('pagina_usuarios'))
+
+    sucesso = deletar_usuario(usuario_id)
+    if sucesso:
+        registrar_log(session.get('nome'), 'EXCLUSAO_USUARIO', f'Excluiu o usuário ID #{usuario_id}')
+
+    return redirect(url_for('pagina_usuarios'))
 
 @app.route("/auditoria")
 @login_required

@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StockFlow - Gestão de Usuários</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}?v=1" type="image/png">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
     <header class="topbar">
         <div class="topbar-container" style="display: flex; justify-content: space-between; align-items: center;">
-            <h2>StockFlow</h2>
+            <h2 class="brand-title">StockFlow</h2>
             <nav class="nav-links" style="display: flex; align-items: center; gap: 1rem;">
                 {% if session.get('cargo') == 'admin' %}
                     <a href="/produtos">Produtos</a>
@@ -79,7 +80,7 @@
             </form>
         </section>
 
-        <!-- Tabela de Usuários e Alteração de Senha -->
+        <!-- Tabela de Usuários -->
         <section class="card">
             <div class="card-header">
                 <h3>Equipe Cadastrada</h3>
@@ -90,33 +91,34 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th style="width: 60px;">ID</th>
+                            <th>ID</th>
                             <th>Nome</th>
                             <th>Login</th>
                             <th>Cargo</th>
-                            <th>Data de Cadastro</th>
-                            <th style="width: 250px;">Redefinir Senha</th>
+                            <th style="text-align: right;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for u in usuarios %}
                         <tr>
                             <td><span class="badge-id">#{{ u[0] }}</span></td>
-                            <td class="font-medium">{{ u[1] }}</td>
-                            <td><code>{{ u[2] }}</code></td>
+                            <td><strong>{{ u[1] }}</strong></td>
+                            <td>{{ u[2] }}</td>
                             <td>
                                 {% if u[3] == 'admin' %}
-                                    <span style="background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: bold; font-size: 0.75rem;">ADMIN</span>
+                                    <span class="tag-category" style="background: #e0e7ff; color: #3730a3;">Administrador</span>
                                 {% else %}
-                                    <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">VENDEDOR</span>
+                                    <span class="tag-category" style="background: #f1f5f9; color: #475569;">Vendedor</span>
                                 {% endif %}
                             </td>
-                            <td class="text-muted">{{ u[4] }}</td>
-                            <td>
-                                <form action="/usuarios/redefinir-senha/{{ u[0] }}" method="POST" style="display: flex; gap: 0.3rem;">
-                                    <input type="password" name="nova_senha" placeholder="Nova senha" style="padding: 0.25rem 0.4rem; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 4px; width: 120px;" required>
-                                    <button type="submit" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; width: auto;">Alterar</button>
+                            <td style="text-align: right;">
+                                {% if u[0] != session.get('usuario_id') %}
+                                <form action="/usuarios/deletar/{{ u[0] }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
+                                    <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">Excluir</button>
                                 </form>
+                                {% else %}
+                                <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">(Sua conta)</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

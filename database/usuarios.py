@@ -90,3 +90,20 @@ def redefinir_senha_usuario(usuario_id, nova_senha):
     except Exception as e:
         print(f"Erro ao redefinir senha: {e}")
         return False
+
+def deletar_usuario(usuario_id):
+    """Remove um usuário do sistema pelo ID (Apenas Admin)."""
+    conexao = conectar()
+    if not conexao:
+        return False
+
+    try:
+        cursor = conexao.cursor()
+        cursor.execute("DELETE FROM usuarios WHERE id = %s;", (usuario_id,))
+        conexao.commit()
+        cursor.close()
+        conexao.close()
+        return True
+    except Exception as e:
+        print(f"Erro ao deletar usuário: {e}")
+        return False
