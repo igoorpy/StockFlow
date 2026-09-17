@@ -89,41 +89,50 @@
             {% if usuarios %}
             <div class="table-responsive">
                 <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nome</th>
-                            <th>Login</th>
-                            <th>Cargo</th>
-                            <th style="text-align: right;">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for u in usuarios %}
-                        <tr>
-                            <td><span class="badge-id">#{{ u[0] }}</span></td>
-                            <td><strong>{{ u[1] }}</strong></td>
-                            <td>{{ u[2] }}</td>
-                            <td>
-                                {% if u[3] == 'admin' %}
-                                    <span class="tag-category" style="background: #e0e7ff; color: #3730a3;">Administrador</span>
-                                {% else %}
-                                    <span class="tag-category" style="background: #f1f5f9; color: #475569;">Vendedor</span>
-                                {% endif %}
-                            </td>
-                            <td style="text-align: right;">
-                                {% if u[0] != session.get('usuario_id') %}
-                                <form action="/usuarios/deletar/{{ u[0] }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
-                                    <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">Excluir</button>
-                                </form>
-                                {% else %}
-                                <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">(Sua conta)</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Login</th>
+            <th>Cargo</th>
+            <th style="text-align: right;">Gerenciar Senha & Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in usuarios %}
+        <tr>
+            <td><span class="badge-id">#{{ u[0] }}</span></td>
+            <td><strong>{{ u[1] }}</strong></td>
+            <td>{{ u[2] }}</td>
+            <td>
+                {% if u[3] == 'admin' %}
+                    <span class="tag-category" style="background: #e0e7ff; color: #3730a3;">Administrador</span>
+                {% else %}
+                    <span class="tag-category" style="background: #f1f5f9; color: #475569;">Vendedor</span>
+                {% endif %}
+            </td>
+            <td style="text-align: right;">
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                    <!-- Formulário de Redefinição de Senha -->
+                    <form action="/usuarios/redefinir-senha/{{ u[0] }}" method="POST" style="display: flex; gap: 0.25rem;">
+                        <input type="password" name="nova_senha" placeholder="Nova senha" required style="padding: 0.25rem 0.4rem; font-size: 0.75rem; width: 110px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        <button type="submit" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Alterar</button>
+                    </form>
+
+                    <!-- Botão de Exclusão -->
+                    {% if u[0] != session.get('usuario_id') %}
+                    <form action="/usuarios/deletar/{{ u[0] }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
+                        <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Excluir</button>
+                    </form>
+                    {% else %}
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">(Sua conta)</span>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
             </div>
             {% else %}
             <p class="empty-state">Nenhum usuário cadastrado.</p>
