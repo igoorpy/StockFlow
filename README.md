@@ -18,7 +18,7 @@ O sistema possui dois perfis de acesso distintos:
 - Administrador (admin): Acesso irrestrito a todas as áreas, incluindo cadastro, edição e exclusão de produtos, gerenciamento de equipe, redefinição de senhas, dashboard de métricas e visualização dos logs de auditoria.
 - Vendedor (vendedor): Restrito às operações do Módulo de Vendas (PDV), abertura/fechamento de caixa e cadastro de clientes.
 
-![Demonstração de Autenticação e Perfil de Acesso](gif/admin_vendedor.gif)
+![Demonstração de Autenticação e Perfil de Acesso](gif/admin-vendedor.gif)
 
 ### Gestão de Estoque
 Permite o cadastro de produtos informando Nome, Categoria, Preço e Quantidade. O banco de dados PostgreSQL gera o identificador único (ID) de forma automática via tipo SERIAL. O sistema calcula o valor total investido e sinaliza itens com estoque crítico (menor ou igual a 3 unidades).
