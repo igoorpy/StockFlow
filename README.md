@@ -18,6 +18,8 @@ O sistema possui dois perfis de acesso distintos:
 - Administrador (admin): Acesso irrestrito a todas as áreas, incluindo cadastro, edição e exclusão de produtos, gerenciamento de equipe, redefinição de senhas, dashboard de métricas e visualização dos logs de auditoria.
 - Vendedor (vendedor): Restrito às operações do Módulo de Vendas (PDV), abertura/fechamento de caixa e cadastro de clientes.
 
+![Demonstração de Autenticação e Perfil de Acesso](gif/admin_vendedor.gif)
+
 ### Gestão de Estoque
 Permite o cadastro de produtos informando Nome, Categoria, Preço e Quantidade. O banco de dados PostgreSQL gera o identificador único (ID) de forma automática via tipo SERIAL. O sistema calcula o valor total investido e sinaliza itens com estoque crítico (menor ou igual a 3 unidades).
 
@@ -30,9 +32,13 @@ Oferece cadastro com Nome, CPF/CNPJ, Telefone e E-mail. Na realização de uma v
 - Registro de Vendas: Valida a quantidade solicitada contra o estoque atual e subtrai os itens do banco de dados de forma atômica via transação SQL (COMMIT/ROLLBACK), registrando a forma de pagamento (Dinheiro, PIX, Cartão de Crédito ou Cartão de Débito).
 - Fechamento de Caixa: Calcula o saldo final acumulado no turno, encerra a sessão do caixa e dispara o download automático do relatório de fechamento consolidado em PDF.
 
+![Demonstração do PDV e Atualização de Estoque](gif/vendas.gif)
+
 ### Emissão de PDFs
 - Comprovante de Venda: PDF contendo os detalhes dos produtos, quantidades, subtotais, valor total, meio de pagamento, data/hora e os dados do cliente associado.
 - Relatório de Fechamento de Caixa: PDF consolidado com o total de vendas por forma de pagamento, saldo final e campos para assinatura do operador e da gerência.
+
+![Demonstração do Caixa e Emissão de Recibo](gif/recibo.gif)
 
 ### Auditoria e Rastreabilidade
 Cada ação sensível (login, logout, criação/edição/exclusão de produtos, criação/exclusão de usuários, registro de vendas e abertura/fechamento de caixa) é gravada na tabela logs_auditoria com o nome do usuário, tipo de ação, descrição detalhada e carimbo de data/hora (TIMESTAMP).
