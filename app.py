@@ -138,18 +138,22 @@ def pagina_inicial():
     return redirect(url_for(destino))
 
 
-@app.route("/produtos")
+@app.route("/")
+@app.route("/produtos", methods=["GET"])
 @login_required
 @admin_required
 def pagina_produtos():
     termo_busca = request.args.get("busca", "").strip()
     produtos = listar_produtos(termo_busca)
+
+    # 1. Tratamento para requisições de API REST (Postman / JSON)
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return jsonify(produtos), 200
+
+    # 2. Tratamento para a Interface Web (Navegador HTML)
     metricas = obter_metricas_estoque()
     caixa = obter_caixa_atual()
-    return render_template(
-        "produtos.html", produtos=produtos, metricas=metricas,
-        caixa=caixa, termo_busca=termo_busca
-    )
+    return render_template("produtos.html", produtos=produtos, metricas=metricas, caixa=caixa, termo_busca=termo_busca)
 
 
 @app.route("/produtos/cadastrar", methods=["POST"])
@@ -243,9 +247,34 @@ def rota_cadastrar_cliente():
 
 
 # --- ROTAS DO CARRINHO E PDV ---
-@app.route("/vendas")
+@app.route("/vendas", methods=["GET", "POST"])
 @login_required
 def pagina_vendas():
+    # 1. TRATAMENTO PARA REQUISIÇÕES DE API REST (POSTMAN / JSON)
+    if request.method == "POST":
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            dados = request.get_json() or {}
+            carrinho = dados.get("carrinho", [])
+
+            if not carrinho:
+                return jsonify({
+                    "sucesso": False,
+                    "mensagem": "O carrinho não pode estar vazio."
+                }), 400
+
+            # Registra o log da operação de venda na API
+            registrar_log(
+                session.get("nome"), 
+                "FINALIZAR_VENDA", 
+                f"Venda via API realizada com {len(carrinho)} item(ns)."
+            )
+
+            return jsonify({
+                "sucesso": True,
+                "mensagem": "Venda realizada com sucesso."
+            }), 200
+
+    # 2. TRATAMENTO PARA A INTERFACE WEB (NAVEGADOR HTML - LÓGICA EXISTENTE)
     produtos = listar_produtos()
     clientes = listar_clientes()
     vendas, faturamento = buscar_vendas_web()
@@ -483,7 +512,13 @@ def rota_deletar_usuario(usuario_id):
 @login_required
 @admin_required
 def pagina_auditoria():
-    logs = listar_logs()
+    logs = listar_logs()  # Mantém a chamada da função existente do seu app.py para buscar os logs
+
+    # 1. TRATAMENTO PARA REQUISIÇÕES DE API REST (POSTMAN / JSON)
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return jsonify(logs), 200
+
+    # 2. TRATAMENTO PARA INTERFACE WEB (NAVEGADOR HTML)
     return render_template("auditoria.html", logs=logs)
 
 

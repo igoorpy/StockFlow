@@ -43,6 +43,15 @@ Oferece cadastro com Nome, CPF/CNPJ, Telefone e E-mail. Na realização de uma v
 ### Auditoria e Rastreabilidade
 Cada ação sensível (login, logout, criação/edição/exclusão de produtos, criação/exclusão de usuários, registro de vendas e abertura/fechamento de caixa) é gravada na tabela logs_auditoria com o nome do usuário, tipo de ação, descrição detalhada e carimbo de data/hora (TIMESTAMP).
 
+## Recursos de API REST (Dual-Interface)
+
+O backend do StockFlow opera em modo dual-interface, servindo visualização Web via HTML renderizado (`render_template`) e respostas em JSON (`jsonify`) para requisições de API REST que enviem os cabeçalhos:
+
+- `Content-Type: application/json`
+- `Accept: application/json`
+
+### Endpoints Refatorados:
+
 
 ## Estrutura do Repositório
 
